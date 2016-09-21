@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Threading;
 
 namespace AnimSharp.Animate
@@ -50,12 +51,11 @@ namespace AnimSharp.Animate
                     );
 
                 // Started Event
-                if (!this.Started && this.AnimationStarted != null)
-                    this.AnimationStarted(this, new AnimationEventArgs(this));
+                if (!this.Started)
+                    this.FireEvent(this.AnimationStarted);
 
                 // Pre Increment Event
-                if (this.AnimationPreIncrement != null)
-                    this.AnimationPreIncrement(this, new AnimationEventArgs(this));
+                this.FireEvent(this.AnimationPreIncrement);
 
                 // Increment Logic
                 this.ElapsedTime += milliseconds;
@@ -63,16 +63,14 @@ namespace AnimSharp.Animate
                     this.ElapsedTime = this.Duration;
 
                 // Increment Event
-                if (this.AnimationIncremented != null)
-                    this.AnimationIncremented(this, new AnimationEventArgs(this));
+                this.FireEvent(this.AnimationIncremented);
 
                 // Post Increment Event
-                if (this.AnimationPostIncrement != null)
-                    this.AnimationPostIncrement(this, new AnimationEventArgs(this));
+                this.FireEvent(this.AnimationPostIncrement);
 
                 // Ended Event
-                if (this.Ended && this.AnimationEnded != null)
-                    this.AnimationEnded(this, new AnimationEventArgs(this));
+                if (this.Ended)
+                    this.FireEvent(this.AnimationEnded);
             }
         }
 
@@ -185,6 +183,35 @@ namespace AnimSharp.Animate
         }
 
         /// <summary>
+        /// Fires the specified animation event. This method performs
+        /// null checking and thread synchronization on the
+        /// SynchronizedObject when necessary.
+        /// </summary>
+        /// 
+        /// <param name="eventToFire">
+        /// the animation event to fire.
+        /// </param>
+        protected void FireEvent(AnimationEventHandler eventToFire)
+        {
+            // Null check
+            if (eventToFire == null)
+                return;
+
+            var args = new AnimationEventArgs(this);
+
+            // If a SynchronizationObject is specified, fire the event
+            // on the object's synchronized thread.
+            if (this.SynchronizationObject != null)
+                this.SynchronizationObject.BeginInvoke(new Action(() =>
+                {
+                    eventToFire(this, args);
+                }), null);
+
+            else
+                eventToFire(this, args);
+        }
+
+        /// <summary>
         /// Resets the animation to its initial state.
         /// </summary>
         public void Reset()
@@ -244,6 +271,8 @@ namespace AnimSharp.Animate
             if (this.AnimationStopped != null)
                 this.AnimationStopped(this, new AnimationEventArgs(this));
         }
+
+        public ISynchronizeInvoke SynchronizationObject { get; set; }
 
         public void Then(PostAnimationAction action)
         {

@@ -51,28 +51,6 @@ namespace AnimSharp.Animate
             this.Stop();
         }
 
-        protected override object GetPropertyValue(PropertyInfo property)
-        {
-            // If we are not on the thread that created the control, we may not be
-            // retrieving the most up to date value of the property. If an invoke
-            // is required, we need to grab the value after the control's creating
-            // thread has finished whatever it is doing.
-            if (this.Control.InvokeRequired && this.Control.IsHandleCreated)
-            {
-                // We must block the current thread until we can retrieve the property's value
-                // from the control's creating thread.
-                object value = null;
-                this.Control.Invoke(new Action(() =>
-                {
-                    value = base.GetPropertyValue(property);
-                }));
-
-                return value;
-            }
-            else
-                return base.GetPropertyValue(property);
-        }
-
         /// <summary>
         /// Allows the wrapped control to redraw after the SuspendDrawing
         /// method was called on it.
@@ -80,30 +58,6 @@ namespace AnimSharp.Animate
         public void ResumeDrawing()
         {
             this.Control.ResumeDrawing();
-        }
-
-        protected override void SetPropertyValue(PropertyInfo property, object value)
-        {
-            // Controls can only be modified on the thread that created them. Since this
-            // method is almost guaranteed to be called on a different thread, we need
-            // to invoke the set on the UI thread.
-            //
-            // NOTE: There is no check for this.Control.Invoke for a reason. This method
-            //       can potentially be called in the UI thread if the Finish method is
-            //       called in response to some UI event. In such a case, it is possible
-            //       for property sets to be applied out of order. This could be alleviated
-            //       by using Invoke instead of BeginInvoke, but Invoke can potentially
-            //       result in a deadlock. Instead, BeginInvoke is used in every case to
-            //       ensure that all set operations are completed in order. The only case
-            //       when BeginInvoke is not used is when a handle has not yet been created
-            //       for the control.
-            if (this.Control.IsHandleCreated)
-                this.Control.BeginInvoke(new Action(() =>
-                {
-                    base.SetPropertyValue(property, value);
-                }));
-            else
-                base.SetPropertyValue(property, value);
         }
 
         /// <summary>
@@ -128,24 +82,26 @@ namespace AnimSharp.Animate
         {
             base.OnAnimationAdded(addedAnimation);
 
+            // Ensure that the events for the animation are only fired from
+            // the thread that constructed the control.
+            addedAnimation.SynchronizationObject = this.Control;
+
             // In order to prevent unnecessary redraws, the SuspendRedrawing method needs to
             // be called before the first animated value is set in order to prevent the control
             // from redrawing every time a property is set.
             addedAnimation.AnimationPreIncrement += (animation, _) =>
             {
-                if (this.Animations.Length > 0 && 
-                    animation == this.Animations.First() &&
+                if (animation == this.Animations.FirstOrDefault() &&
                     this.Control.IsHandleCreated)
-                    this.Control.BeginInvoke(new Action(this.SuspendDrawing));
+                    this.SuspendDrawing();
             };
 
             // Once the last property is set, the control is ready to be redrawn.
             addedAnimation.AnimationPostIncrement += (animation, _) =>
             {
-                if (this.Animations.Length > 0 && 
-                    animation == this.Animations.Last() &&
+                if (animation == this.Animations.LastOrDefault() &&
                     this.Control.IsHandleCreated)
-                    this.Control.BeginInvoke(new Action(this.ResumeDrawing));
+                    this.ResumeDrawing();
             };
         }
 

@@ -30,7 +30,7 @@ namespace AnimSharp
         bool to = true;
         private void Start_Click(object sender, EventArgs e)
         {
-            a.Stop();
+            a.Finish();
 
             var b = to ? 650 : 23;
             a.AnimatePropertyTo("Left", b, 1000, Interpolators.Linear);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -16,6 +17,26 @@ namespace AnimSharp.Utility
 
         // ID for the WM_SETREDRAW message for win32.
         private const int WM_SETREDRAW = 11;
+
+        // List of controls that have their controls suspended.
+        private static List<Control> suspendedControls = new List<Control>();
+
+        /// <summary>
+        /// Gets whether or not the specified control has its drawing suspended.
+        /// </summary>
+        /// 
+        /// <param name="control">
+        /// the control to check.
+        /// </param>
+        /// 
+        /// <returns>
+        /// true if the control currently has its drawing suspended or false if
+        /// it doesn't.
+        /// </returns>
+        public static bool IsControlSuspended(this Control control)
+        {
+            return suspendedControls.Contains(control);
+        }
 
         /// <summary>
         /// Resumes redrawing for the specified control.
@@ -39,6 +60,9 @@ namespace AnimSharp.Utility
                 control.Parent.Refresh();
             else
                 control.Refresh();
+
+            // Remove the control from the list of suspended controls.
+            suspendedControls.Remove(control);
         }
 
         /// <summary>
@@ -57,6 +81,9 @@ namespace AnimSharp.Utility
         public static void SuspendDrawing(this Control control)
         {
             SendMessage(control.Handle, WM_SETREDRAW, false, 0);
+
+            // Add the control to the list of suspended controls.
+            suspendedControls.Add(control);
         }
     }
 }

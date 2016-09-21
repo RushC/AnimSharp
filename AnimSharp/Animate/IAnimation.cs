@@ -1,4 +1,6 @@
-﻿namespace AnimSharp.Animate
+﻿using System.ComponentModel;
+
+namespace AnimSharp.Animate
 {
     /// <summary>
     /// The delegate type of handlers for all IAnimation events.
@@ -179,6 +181,13 @@
         /// complete.
         /// </remarks>
         void Stop();
+
+        /// <summary>
+        /// Gets or sets the object to synchronize with. Setting this
+        /// object will force all events fired by the animation to be
+        /// fired on the object's synchronized thread.
+        /// </summary>
+        ISynchronizeInvoke SynchronizationObject { get; set; }
 
         /// <summary>
         /// Performs the specified action after the animation finishes.

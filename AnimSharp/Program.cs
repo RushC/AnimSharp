@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using AnimSharp.Animate;
+
 namespace AnimSharp
 {
     static class Program

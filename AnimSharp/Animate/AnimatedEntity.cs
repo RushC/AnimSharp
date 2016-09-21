@@ -15,7 +15,7 @@ namespace AnimSharp.Animate
     /// to be used for animations that don't specify them. The AnimatedEntity class
     /// also provides methods to keep track of what animations it is running at any
     /// given time.
-    /// </summary
+    /// </summary>
     /// 
     /// <typeparam name="T">
     /// the type of objects that can be animated in the AnimatedEntity.
