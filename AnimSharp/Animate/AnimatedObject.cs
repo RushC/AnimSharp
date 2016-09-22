@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Reflection;
@@ -24,6 +25,10 @@ namespace AnimSharp.Animate
     /// </summary>
     public class AnimatedObject : AnimatedEntity
     {
+        // The list of animations to compose into a single composite animation
+        // when the StartAnimation method is called.
+        private List<Animation<double>> compositeAnimations;
+
         /// <summary>
         /// Constructs a new AnimatedObject that animates the specified
         /// object.
@@ -35,6 +40,7 @@ namespace AnimSharp.Animate
         public AnimatedObject(object o)
         {
             this.Object = o;
+            this.compositeAnimations = new List<Animation<double>>();
         }
 
         /// <summary>
@@ -500,6 +506,33 @@ namespace AnimSharp.Animate
         }
 
         /// <summary>
+        /// Begins composing animations performed on the AnimatedObject.
+        /// 
+        /// When animations are being composed, all animations performed
+        /// on the object will be saved instead of started until the
+        /// StartAnimation method is called. Once the StartAnimation
+        /// method is called, all saved animations will be started as
+        /// a single CompositeAnimation.
+        /// 
+        /// Any subsequent calls to the ComposeAnimation method before
+        /// the StartAnimation method is called will result in the
+        /// saved animations being cleared.
+        /// </summary>
+        public void ComposeAnimation()
+        {
+            this.Composing = true;
+            this.compositeAnimations.Clear();
+        }
+
+        /// <summary>
+        /// Gets whether or not animations are currently being composed
+        /// into a single composite animation. This will only be true
+        /// in between calls to the ComposeAnimation
+        /// method and the StartAnimation method.
+        /// </summary>
+        public bool Composing { get; private set; }
+
+        /// <summary>
         /// Gets the value of the specified property for the wrapped object.
         /// </summary>
         /// 
@@ -555,7 +588,7 @@ namespace AnimSharp.Animate
         /// The property must be a primitive typed property.
         /// </summary>
         /// 
-        /// <param name="propertyName">
+        /// <param name="property">
         /// the name of the property to set the value for.
         /// </param>
         /// <param name="value">
@@ -565,6 +598,31 @@ namespace AnimSharp.Animate
         {
             // Set the value of the property for the wrapped object.
             property.SetValue(this.Object, value);
+        }
+
+        /// <summary>
+        /// Creates a CompositeAnimation out of all of the animations that were
+        /// saved since the ComposeAnimation method was called and starts it.
+        /// 
+        /// Once this method is called, the AnimatedObject will no longer be
+        /// composing animations until the ComposeAnimation method is called
+        /// again. 
+        /// 
+        /// If this method is called before the ComposeAnimation method is called
+        /// or when no animations have been saved, nothing will happen.
+        /// </summary>
+        public void StartAnimation(long duration, Interpolator interpolator)
+        {
+            // Stop composing.
+            this.Composing = false;
+
+            // Do nothing if there are no saved animations.
+            if (this.compositeAnimations.Count == 0)
+                return;
+
+            // Create composite animation.
+            var animation = new CompositeAnimation<double>(this.compositeAnimations.ToArray());
+            animation.Start();
         }
 
         /// <summary>

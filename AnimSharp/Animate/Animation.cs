@@ -126,10 +126,10 @@ namespace AnimSharp.Animate
                     this.AnimationEnded += (_, __) =>
                     {
                         lock (this.lockObject)
-                            Monitor.PulseAll(this);
+                            Monitor.PulseAll(this.lockObject);
                     };
 
-                    Monitor.Wait(this);
+                    Monitor.Wait(this.lockObject);
                 }
             }
 

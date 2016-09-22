@@ -2,7 +2,6 @@
 
 using System;
 using System.Linq;
-using System.Reflection;
 using System.Windows.Forms;
 
 namespace AnimSharp.Animate
